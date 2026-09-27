@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#120817">
-<title>A Little Birthday Surprise ♡</title>
+<title>Happy Birthday Ayushi ♡</title>
 
 <style>
 *{box-sizing:border-box}
@@ -125,7 +125,7 @@ canvas{
 #blowButton{
   position:absolute;
   left:50%;
-  bottom:max(42px,env(safe-area-inset-bottom));
+  bottom:max(14px,env(safe-area-inset-bottom));
   transform:translateX(-50%);
   z-index:20;
   opacity:0;
@@ -166,7 +166,7 @@ canvas{
 
 #birthdayTitle h2{
   margin:10px 15px 0;
-  font-size:clamp(48px,12vw,105px);
+  font-size:clamp(42px,10vw,92px);
   line-height:.88;
   font-weight:400;
   background:linear-gradient(110deg,#fff,#ffc9ef 35%,#ffd978 68%,#fff);
@@ -187,7 +187,7 @@ canvas{
 #message{
   position:absolute;
   left:50%;
-  bottom:8%;
+  bottom:9%;
   transform:translateX(-50%);
   width:min(600px,calc(100% - 40px));
   font:400 clamp(15px,3.5vw,20px)/1.65 Georgia,serif;
@@ -218,8 +218,8 @@ canvas{
 @media (max-height:650px){
   #birthdayTitle{top:4%}
   #birthdayTitle h2{font-size:clamp(40px,11vw,78px)}
-  #message{bottom:4%;font-size:14px}
-  #blowButton{bottom:18px}
+  #message{bottom:8%;font-size:14px}
+  #blowButton{bottom:10px}
 }
 
 </style>
@@ -241,14 +241,11 @@ canvas{
 
   <div id="birthdayTitle">
     <div class="eyebrow">A little birthday wish</div>
-    <h2>Happy Birthday</h2>
-    <div class="name">Made with a little magic ♡</div>
+    <h2>Happy Birthday Ayushi</h2>
   </div>
 
   <div id="message">
-    May your days be soft, your smile be endless,
-    and this new year of your life bring you
-    the sweetest little moments. ✨
+    Hope today gives you a little extra reason to smile.<br>Have a really happy birthday, Ayushi. ♡
   </div>
 
 </div>
@@ -1095,6 +1092,21 @@ function createBurst(){
       morph: false
     });
   }
+
+
+
+  // Every burst particle gets a destination on the birthday lettering.
+  // This is the key visual: the flowers literally become the wish.
+  if(morphTargets.length){
+    for(let i=0;i<particles.length;i++){
+      const t = morphTargets[
+        Math.floor(i * morphTargets.length / particles.length)
+      ];
+      particles[i].tx = t.x;
+      particles[i].ty = t.y;
+      particles[i].morph = true;
+    }
+  }
 }
 
 
@@ -1106,129 +1118,44 @@ let morphTargets = [];
 let morphPrepared = false;
 
 function prepareMorphTargets(){
-
   if(morphPrepared)return;
-
   morphPrepared = true;
 
-  const off =
-    document.createElement("canvas");
-
-  const ow =
-    Math.max(
-      420,
-      Math.floor(W*.86)
-    );
-
-  const oh = 150;
-
+  const off = document.createElement("canvas");
+  const ow = Math.min(1000, Math.max(520, Math.floor(W*.90)));
+  const oh = 220;
   off.width = ow;
   off.height = oh;
 
-  const ctx =
-    off.getContext("2d");
+  const ctx = off.getContext("2d",{willReadFrequently:true});
+  const size = Math.min(104, Math.max(58, W*.115));
 
-  const fontSize =
-    Math.min(
-      82,
-      W*.14
-    );
-
+  ctx.clearRect(0,0,ow,oh);
   ctx.fillStyle = "#fff";
-  ctx.font =
-    `700 ${fontSize}px Georgia`;
-
+  ctx.font = `800 ${size}px Georgia, serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.fillText("Happy Birthday Ayushi",ow/2,oh/2);
 
-  ctx.fillText(
-    "Happy Birthday",
-    ow/2,
-    oh/2
-  );
+  const px = ctx.getImageData(0,0,ow,oh).data;
+  const pts = [];
 
-  const pixels =
-    ctx.getImageData(
-      0,
-      0,
-      ow,
-      oh
-    ).data;
-
-  const points = [];
-
-  for(let y=0;y<oh;y+=5){
-
-    for(let x=0;x<ow;x+=5){
-
-      const alpha =
-        pixels[(y*ow+x)*4+3];
-
-      if(alpha > 100){
-
-        points.push({
-
-          x:
-            W/2 -
-            ow/2 +
-            x,
-
-          y:
-            H*.20 -
-            oh/2 +
-            y
-
+  // Dense enough that the actual burst particles visibly form the letters.
+  for(let y=0;y<oh;y+=3){
+    for(let x=0;x<ow;x+=3){
+      if(px[(y*ow+x)*4+3] > 120){
+        pts.push({
+          x: W/2 - ow/2 + x,
+          y: H*.20 - oh/2 + y
         });
-
       }
     }
   }
 
-  /*
-     We have deliberately fewer targets than
-     pixels. This keeps mobile rendering light.
-  */
-
-  const targetCount =
-    Math.min(
-      points.length,
-      particles.length
-    );
-
-  for(let i=0;i<targetCount;i++){
-
-    const p =
-      points[
-        Math.floor(
-          i * points.length / targetCount
-        )
-      ];
-
-    morphTargets.push(p);
-  }
-
-  /*
-     Some particles remain free-floating
-     around the words for a magical dust effect.
-  */
-
-  for(let i=0;i<particles.length;i++){
-
-    if(i < morphTargets.length){
-
-      particles[i].tx =
-        morphTargets[i].x;
-
-      particles[i].ty =
-        morphTargets[i].y;
-
-      particles[i].morph = true;
-
-    }
-  }
+  morphTargets = pts;
 }
 
-
+prepareMorphTargets();
 /* ============================================================
    PARTICLE BURST / MORPH RENDER
 ============================================================ */
@@ -1246,12 +1173,6 @@ function renderBurst(dt){
   */
 
   const morphStart = 1150;
-
-  if(elapsed > morphStart){
-
-    prepareMorphTargets();
-
-  }
 
   let alive = 0;
 
@@ -1274,29 +1195,19 @@ function renderBurst(dt){
          burst particles into the words.
       */
 
-      const strength =
-        clamp(
-          (elapsed-morphStart)/900,
-          0,
-          1
-        );
+      const t = clamp((elapsed-morphStart)/1250,0,1);
+      const ease = t*t*(3-2*t);
 
-      p.x =
-        lerp(
-          p.x,
-          p.tx,
-          .018 + strength*.035
-        );
+      // Smoothly guide the actual flower particles into the letters.
+      // The easing removes the mechanical "snap" while keeping the
+      // particles clearly visible as the source of the greeting.
+      const follow = .045 + ease*.075;
 
-      p.y =
-        lerp(
-          p.y,
-          p.ty,
-          .018 + strength*.035
-        );
+      p.x += (p.tx-p.x) * follow;
+      p.y += (p.ty-p.y) * follow;
 
-      p.vx *= .92;
-      p.vy *= .92;
+      p.vx *= .84;
+      p.vy *= .84;
 
     }else{
 
@@ -1329,12 +1240,17 @@ function renderBurst(dt){
 
     }
 
+    const settledFade =
+      elapsed > morphStart + 1350
+        ? clamp(1-(elapsed-(morphStart+1350))/550,0,1)
+        : 1;
+
     fxCtx.fillStyle =
       `hsla(
         ${p.hue},
         100%,
         76%,
-        ${Math.max(.35,p.life)}
+        ${Math.max(.35,p.life)*settledFade}
       )`;
 
     fxCtx.beginPath();
@@ -1358,7 +1274,7 @@ function renderBurst(dt){
   */
 
   if(
-    elapsed > 3000
+    elapsed > 3200
   ){
 
     enterWish();
