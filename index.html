@@ -1,0 +1,2579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#120817">
+<title>A Little Birthday Surprise ♡</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{
+  background:#100714;
+  color:#fff;
+  font-family:Georgia,"Times New Roman",serif;
+  touch-action:none;
+}
+canvas{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+#cameraCanvas{z-index:1}
+#fxCanvas{z-index:2;pointer-events:none}
+#sceneCanvas{z-index:4;pointer-events:none}
+
+#ui{
+  position:fixed;
+  inset:0;
+  z-index:10;
+  pointer-events:none;
+  text-align:center;
+}
+
+#instruction{
+  position:absolute;
+  top:max(30px,env(safe-area-inset-top));
+  left:20px;
+  right:20px;
+  font:600 14px system-ui,sans-serif;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  text-shadow:0 0 22px rgba(255,110,220,.7);
+}
+
+#hint{
+  position:absolute;
+  top:max(58px,calc(env(safe-area-inset-top) + 28px));
+  left:20px;
+  right:20px;
+  font:400 12px system-ui,sans-serif;
+  opacity:.68;
+}
+
+#status{
+  position:absolute;
+  bottom:25px;
+  left:50%;
+  transform:translateX(-50%);
+  font:500 10px system-ui,sans-serif;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  opacity:.55;
+  white-space:nowrap;
+}
+
+#start{
+  position:fixed;
+  inset:0;
+  z-index:30;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(255,83,190,.13),transparent 38%),
+    #100714;
+}
+
+.startCard{
+  width:min(470px,calc(100% - 34px));
+  padding:38px 28px 30px;
+  border:1px solid rgba(255,215,240,.2);
+  border-radius:28px;
+  background:rgba(31,12,37,.88);
+  box-shadow:0 25px 90px rgba(0,0,0,.5),0 0 70px rgba(255,80,190,.08);
+  text-align:center;
+}
+
+.orb{
+  width:70px;
+  height:70px;
+  margin:0 auto 20px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,#ff9ee6 20%,#a45cff 55%,transparent 73%);
+  box-shadow:0 0 55px rgba(255,90,205,.55);
+}
+
+.startCard h1{
+  margin:0;
+  font-size:31px;
+  font-weight:400;
+}
+
+.startCard p{
+  margin:13px 0 25px;
+  font:14px/1.65 system-ui,sans-serif;
+  color:rgba(255,255,255,.72);
+}
+
+#startButton,
+#blowButton{
+  border:0;
+  border-radius:999px;
+  padding:14px 28px;
+  color:white;
+  background:linear-gradient(90deg,#ff61c8,#9d62ff);
+  box-shadow:0 12px 35px rgba(255,85,195,.25);
+  font:700 12px system-ui,sans-serif;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+
+#blowButton{
+  position:absolute;
+  left:50%;
+  bottom:max(42px,env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  z-index:20;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .5s,transform .5s;
+}
+
+#blowButton.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+#blowButton:active{transform:translateX(-50%) scale(.97)}
+
+#birthdayTitle{
+  position:absolute;
+  left:0;
+  right:0;
+  top:8%;
+  opacity:0;
+  transform:translateY(20px) scale(.96);
+  transition:opacity 1.2s ease,transform 1.2s cubic-bezier(.2,.8,.2,1);
+}
+
+#birthdayTitle.show{
+  opacity:1;
+  transform:none;
+}
+
+.eyebrow{
+  font:600 12px system-ui,sans-serif;
+  letter-spacing:.4em;
+  margin-left:.4em;
+  color:#ffe4f7;
+  text-transform:uppercase;
+  text-shadow:0 0 20px #ff63c8;
+}
+
+#birthdayTitle h2{
+  margin:10px 15px 0;
+  font-size:clamp(48px,12vw,105px);
+  line-height:.88;
+  font-weight:400;
+  background:linear-gradient(110deg,#fff,#ffc9ef 35%,#ffd978 68%,#fff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow:0 0 45px rgba(255,100,210,.18);
+}
+
+#birthdayTitle .name{
+  margin-top:16px;
+  font-size:clamp(22px,5vw,42px);
+  letter-spacing:.18em;
+  color:#fff7fb;
+  text-shadow:0 0 20px rgba(255,210,235,.45);
+}
+
+#message{
+  position:absolute;
+  left:50%;
+  bottom:8%;
+  transform:translateX(-50%);
+  width:min(600px,calc(100% - 40px));
+  font:400 clamp(15px,3.5vw,20px)/1.65 Georgia,serif;
+  color:rgba(255,244,250,.88);
+  opacity:0;
+  transition:opacity 1.4s ease;
+  text-shadow:0 2px 20px rgba(0,0,0,.6);
+}
+
+#message.show{opacity:1}
+
+#error{
+  display:none;
+  position:fixed;
+  left:50%;
+  bottom:20px;
+  transform:translateX(-50%);
+  z-index:50;
+  width:min(560px,calc(100% - 28px));
+  padding:12px 15px;
+  border-radius:12px;
+  background:rgba(100,10,35,.9);
+  border:1px solid rgba(255,130,170,.3);
+  font:12px/1.45 system-ui,sans-serif;
+  text-align:center;
+}
+
+@media (max-height:650px){
+  #birthdayTitle{top:4%}
+  #birthdayTitle h2{font-size:clamp(40px,11vw,78px)}
+  #message{bottom:4%;font-size:14px}
+  #blowButton{bottom:18px}
+}
+
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay muted playsinline style="display:none"></video>
+
+<canvas id="cameraCanvas"></canvas>
+<canvas id="fxCanvas"></canvas>
+<canvas id="sceneCanvas"></canvas>
+
+<div id="ui">
+
+  <div id="instruction">A little magic is waiting…</div>
+  <div id="hint">Raise your hand and let the light follow your finger.</div>
+  <div id="status">waiting</div>
+
+  <div id="birthdayTitle">
+    <div class="eyebrow">A little birthday wish</div>
+    <h2>Happy Birthday</h2>
+    <div class="name">Made with a little magic ♡</div>
+  </div>
+
+  <div id="message">
+    May your days be soft, your smile be endless,
+    and this new year of your life bring you
+    the sweetest little moments. ✨
+  </div>
+
+</div>
+
+<button id="blowButton">♡ Make a wish & blow ♡</button>
+
+<div id="start">
+  <div class="startCard">
+    <div class="orb"></div>
+    <h1>Something magical is waiting…</h1>
+    <p>
+      Allow the camera, raise your hand, and draw a little flower.
+      After the magic begins, the camera disappears and the real birthday surprise starts.
+    </p>
+    <button id="startButton">Begin the surprise</button>
+  </div>
+</div>
+
+<div id="error"></div>
+
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<script>
+(() => {
+"use strict";
+
+/* ============================================================
+   DOM
+============================================================ */
+
+const video = document.getElementById("video");
+const cameraCanvas = document.getElementById("cameraCanvas");
+const fxCanvas = document.getElementById("fxCanvas");
+const sceneCanvas = document.getElementById("sceneCanvas");
+
+const cameraCtx = cameraCanvas.getContext("2d",{alpha:false});
+const fxCtx = fxCanvas.getContext("2d");
+const sceneCtx = sceneCanvas.getContext("2d");
+
+const instruction = document.getElementById("instruction");
+const hint = document.getElementById("hint");
+const status = document.getElementById("status");
+
+const birthdayTitle = document.getElementById("birthdayTitle");
+const message = document.getElementById("message");
+
+const start = document.getElementById("start");
+const startButton = document.getElementById("startButton");
+const blowButton = document.getElementById("blowButton");
+const errorBox = document.getElementById("error");
+
+
+/* ============================================================
+   SIZE
+============================================================ */
+
+let W=innerWidth;
+let H=innerHeight;
+let DPR=Math.min(devicePixelRatio||1,1.5);
+
+function resize(){
+  W=innerWidth;
+  H=innerHeight;
+  DPR=Math.min(devicePixelRatio||1,1.5);
+
+  for(const c of [cameraCanvas,fxCanvas,sceneCanvas]){
+    c.width=Math.floor(W*DPR);
+    c.height=Math.floor(H*DPR);
+    c.style.width=W+"px";
+    c.style.height=H+"px";
+  }
+
+  cameraCtx.setTransform(DPR,0,0,DPR,0,0);
+  fxCtx.setTransform(DPR,0,0,DPR,0,0);
+  sceneCtx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+addEventListener("resize",resize,{passive:true});
+resize();
+
+
+/* ============================================================
+   STATES
+============================================================ */
+
+const DRAW=0;
+const BOUQUET=1;
+const BURST=2;
+const WISH=3;
+
+let state=DRAW;
+let stateTime=0;
+
+let appStarted=false;
+
+
+/* ============================================================
+   MEDIAPIPE
+============================================================ */
+
+let hands=null;
+let cameraController=null;
+
+let processing=false;
+let lastInference=0;
+
+/*
+   IMPORTANT PERFORMANCE CHANGE:
+
+   We do NOT run MediaPipe on every animation frame.
+
+   Hand recognition only runs roughly 8 times/second.
+   Rendering can stay smooth at 60fps.
+*/
+const INFERENCE_INTERVAL=125;
+
+
+/* ============================================================
+   HAND
+============================================================ */
+
+let currentHand=null;
+let secondHand=null;
+
+let trail=[];
+let lastTip=null;
+
+let stableFrames=0;
+let gathered=false;
+
+
+/* ============================================================
+   PARTICLES
+============================================================ */
+
+let particles=[];
+
+
+/* ============================================================
+   PARTY
+============================================================ */
+
+let confetti=[];
+let balloons=[];
+let stars=[];
+
+let candlesBlown=false;
+let cakeVisible=false;
+
+
+/* ============================================================
+   AUDIO
+============================================================ */
+
+let audioContext=null;
+let masterGain=null;
+let musicStarted=false;
+
+
+/*
+   A soft original WebAudio instrumental.
+   No external MP3 is needed.
+   This avoids another network request and
+   makes the site more reliable on GitHub Pages.
+*/
+
+function startMusic(){
+
+  if(musicStarted)return;
+
+  try{
+
+    audioContext =
+      new (window.AudioContext || window.webkitAudioContext)();
+
+    masterGain =
+      audioContext.createGain();
+
+    masterGain.gain.value = 0.0001;
+    masterGain.connect(audioContext.destination);
+
+    const compressor =
+      audioContext.createDynamicsCompressor();
+
+    compressor.threshold.value = -24;
+    compressor.knee.value = 18;
+    compressor.ratio.value = 4;
+    compressor.attack.value = .02;
+    compressor.release.value = .25;
+
+    masterGain.disconnect();
+    masterGain.connect(compressor);
+    compressor.connect(audioContext.destination);
+
+    const chords = [
+      [261.63,329.63,392.00],
+      [220.00,277.18,329.63],
+      [174.61,220.00,261.63],
+      [196.00,246.94,293.66]
+    ];
+
+    let chordIndex = 0;
+
+    function chord(){
+
+      if(!audioContext)return;
+
+      const now = audioContext.currentTime;
+      const notes = chords[chordIndex % chords.length];
+
+      notes.forEach((frequency, i) => {
+
+        const osc =
+          audioContext.createOscillator();
+
+        const gain =
+          audioContext.createGain();
+
+        osc.type = i === 0 ? "sine" : "triangle";
+        osc.frequency.value = frequency;
+
+        const volume = i === 0 ? .028 : .018;
+
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(
+          volume,
+          now + .45
+        );
+        gain.gain.exponentialRampToValueAtTime(
+          .0001,
+          now + 3.8
+        );
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start(now);
+        osc.stop(now + 4);
+      });
+
+      // A tiny high bell note gives the scene a gentle birthday sparkle.
+      const bell =
+        audioContext.createOscillator();
+
+      const bellGain =
+        audioContext.createGain();
+
+      bell.type = "sine";
+      bell.frequency.value =
+        notes[1] * 2;
+
+      bellGain.gain.setValueAtTime(.0001, now + .75);
+      bellGain.gain.exponentialRampToValueAtTime(
+        .018,
+        now + .9
+      );
+      bellGain.gain.exponentialRampToValueAtTime(
+        .0001,
+        now + 2.3
+      );
+
+      bell.connect(bellGain);
+      bellGain.connect(masterGain);
+
+      bell.start(now + .75);
+      bell.stop(now + 2.4);
+
+      chordIndex++;
+
+      setTimeout(chord, 3600);
+    }
+
+    masterGain.gain.exponentialRampToValueAtTime(
+      .32,
+      audioContext.currentTime + 1.8
+    );
+
+    musicStarted = true;
+    chord();
+
+  }catch(e){
+    console.warn("Audio unavailable",e);
+  }
+}
+
+
+/* ============================================================
+   HELPERS
+============================================================ */
+
+function clamp(v,a,b){
+  return Math.max(a,Math.min(b,v));
+}
+
+function lerp(a,b,t){
+  return a+(b-a)*t;
+}
+
+function screenPoint(p){
+  return {
+    x:(1-p.x)*W,
+    y:p.y*H
+  };
+}
+
+function distance(a,b){
+  return Math.hypot(
+    a.x-b.x,
+    a.y-b.y
+  );
+}
+
+function glow(ctx,x,y,r,color){
+
+  const g=
+    ctx.createRadialGradient(
+      x,y,0,
+      x,y,r
+    );
+
+  g.addColorStop(0,color);
+  g.addColorStop(1,color.replace("1)","0)"));
+
+  ctx.fillStyle=g;
+
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+}
+
+
+/* ============================================================
+   MEDIA PIPE INITIALISATION
+============================================================ */
+
+async function initHands(){
+
+  hands=
+    new Hands({
+      locateFile:
+        file =>
+        "https://cdn.jsdelivr.net/npm/@mediapipe/hands/"+file
+    });
+
+  /*
+     modelComplexity 0 is intentional.
+     It is dramatically lighter on phones.
+  */
+
+  hands.setOptions({
+    maxNumHands:2,
+    modelComplexity:0,
+    minDetectionConfidence:.55,
+    minTrackingConfidence:.50
+  });
+
+  hands.onResults(results=>{
+    const list=
+      results.multiHandLandmarks||[];
+
+    currentHand=
+      list[0]||null;
+
+    secondHand=
+      list[1]||null;
+
+    if(currentHand){
+      stableFrames++;
+
+      const p=
+        screenPoint(currentHand[8]);
+
+      if(!lastTip){
+        lastTip=p;
+      }
+
+      lastTip={
+        x:lerp(lastTip.x,p.x,.55),
+        y:lerp(lastTip.y,p.y,.55)
+      };
+
+      if(state===DRAW){
+
+        const previous=
+          trail[trail.length-1];
+
+        if(
+          !previous ||
+          distance(lastTip,previous)>2.5
+        ){
+
+          trail.push({
+            x:lastTip.x,
+            y:lastTip.y
+          });
+
+          if(trail.length>260){
+            trail.shift();
+          }
+        }
+      }
+    }
+
+    if(
+      state===BOUQUET &&
+      currentHand &&
+      secondHand
+    ){
+
+      const a=
+        screenPoint(currentHand[8]);
+
+      const b=
+        screenPoint(secondHand[8]);
+
+      if(
+        distance(a,b)<
+        Math.min(W,H)*.34
+      ){
+        gathered=true;
+      }
+    }
+  });
+}
+
+
+/* ============================================================
+   CAMERA START
+============================================================ */
+
+async function startCamera(){
+
+  try{
+
+    const stream=
+      await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode:"user",
+          width:{ideal:960},
+          height:{ideal:540},
+          frameRate:{ideal:24,max:30}
+        }
+      });
+
+    video.srcObject=stream;
+
+    await video.play();
+
+    cameraController=
+      new Camera(
+        video,
+        {
+          width:960,
+          height:540,
+          onFrame:async()=>{
+
+            const now=performance.now();
+
+            /*
+               Rate-limit inference.
+            */
+
+            if(
+              processing ||
+              now-lastInference<
+              INFERENCE_INTERVAL ||
+              !video.videoWidth
+            ){
+              return;
+            }
+
+            processing=true;
+            lastInference=now;
+
+            try{
+              if(state===DRAW||state===BOUQUET){
+                await hands.send({image:video});
+              }
+            }catch(e){
+              /*
+                 Non-fatal.
+              */
+            }
+
+            processing=false;
+          }
+        }
+      );
+
+    cameraController.start();
+
+  }catch(e){
+
+    console.warn(e);
+
+    errorBox.textContent=
+      "Camera permission was not available. The surprise will continue automatically.";
+
+    errorBox.style.display="block";
+
+  }
+}
+
+
+/* ============================================================
+   CAMERA STOP
+============================================================ */
+
+function stopCamera(){
+
+  /*
+     Stop MediaPipe scheduling.
+  */
+
+  try{
+    if(cameraController&&cameraController.stop){
+      cameraController.stop();
+    }
+  }catch(e){}
+
+  cameraController=null;
+
+
+  /*
+     Stop actual camera tracks.
+     This is important:
+     the birthday page does NOT need
+     the camera anymore.
+  */
+
+  try{
+
+    const stream=
+      video.srcObject;
+
+    if(stream){
+
+      stream.getTracks().forEach(
+        track=>track.stop()
+      );
+
+    }
+
+  }catch(e){}
+
+
+  video.srcObject=null;
+
+  currentHand=null;
+  secondHand=null;
+
+  /*
+     Remove camera layer.
+  */
+
+  cameraCanvas.style.display="none";
+  fxCanvas.style.display="none";
+
+}
+
+
+/* ============================================================
+   DRAW CAMERA
+============================================================ */
+
+function renderCamera(){
+
+  if(
+    !video.videoWidth ||
+    cameraCanvas.style.display==="none"
+  ){
+    return;
+  }
+
+  cameraCtx.setTransform(
+    DPR,0,0,DPR,0,0
+  );
+
+  cameraCtx.clearRect(
+    0,0,W,H
+  );
+
+  const vw=video.videoWidth;
+  const vh=video.videoHeight;
+
+  const scale=
+    Math.max(
+      W/vw,
+      H/vh
+    );
+
+  const dw=vw*scale;
+  const dh=vh*scale;
+
+  cameraCtx.save();
+
+  cameraCtx.translate(W,0);
+  cameraCtx.scale(-1,1);
+
+  cameraCtx.drawImage(
+    video,
+    (W-dw)/2,
+    (H-dh)/2,
+    dw,
+    dh
+  );
+
+  cameraCtx.restore();
+
+
+  /*
+     Cinematic tint.
+  */
+
+  const g=
+    cameraCtx.createRadialGradient(
+      W*.5,H*.45,20,
+      W*.5,H*.5,
+      Math.max(W,H)*.8
+    );
+
+  g.addColorStop(
+    0,
+    "rgba(25,3,35,.04)"
+  );
+
+  g.addColorStop(
+    1,
+    "rgba(5,1,12,.70)"
+  );
+
+  cameraCtx.fillStyle=g;
+  cameraCtx.fillRect(0,0,W,H);
+}
+
+
+/* ============================================================
+   DRAW TRAIL
+============================================================ */
+
+function renderTrail(){
+
+  fxCtx.clearRect(
+    0,0,W,H
+  );
+
+  if(trail.length<2)return;
+
+  fxCtx.save();
+
+  fxCtx.globalCompositeOperation="lighter";
+
+  fxCtx.lineCap="round";
+  fxCtx.lineJoin="round";
+
+
+  /*
+     One soft stroke.
+     Much cheaper than multiple
+     giant blurred strokes.
+  */
+
+  fxCtx.beginPath();
+
+  for(let i=0;i<trail.length;i++){
+
+    const p=trail[i];
+
+    if(i===0){
+      fxCtx.moveTo(p.x,p.y);
+    }else{
+      fxCtx.lineTo(p.x,p.y);
+    }
+  }
+
+  fxCtx.strokeStyle=
+    "rgba(255,80,205,.18)";
+
+  fxCtx.lineWidth=14;
+  fxCtx.stroke();
+
+
+  fxCtx.beginPath();
+
+  for(let i=0;i<trail.length;i++){
+
+    const p=trail[i];
+
+    if(i===0){
+      fxCtx.moveTo(p.x,p.y);
+    }else{
+      fxCtx.lineTo(p.x,p.y);
+    }
+  }
+
+  fxCtx.strokeStyle=
+    "rgba(255,220,248,.9)";
+
+  fxCtx.lineWidth=2.2;
+  fxCtx.stroke();
+
+
+  if(lastTip){
+
+    glow(
+      fxCtx,
+      lastTip.x,
+      lastTip.y,
+      20,
+      "rgba(255,80,205,1)"
+    );
+
+  }
+
+  fxCtx.restore();
+}
+
+
+/* ============================================================
+   FLOWER
+============================================================ */
+
+function drawFlower(ctx,x,y,size,rotation=0,alpha=1){
+
+  ctx.save();
+
+  ctx.globalAlpha=alpha;
+  ctx.globalCompositeOperation="lighter";
+
+  const r=size;
+
+  for(let i=0;i<6;i++){
+
+    const a=
+      rotation+
+      i*Math.PI/3;
+
+    const px=
+      x+
+      Math.cos(a)*r*.48;
+
+    const py=
+      y+
+      Math.sin(a)*r*.48;
+
+    ctx.save();
+
+    ctx.translate(px,py);
+    ctx.rotate(a+Math.PI/2);
+
+    ctx.fillStyle=
+      i%2
+      ?"rgba(255,100,210,.8)"
+      :"rgba(177,100,255,.8)";
+
+    ctx.shadowBlur=10;
+    ctx.shadowColor="#ff69d3";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+      0,
+      -r*.4,
+      r*.23,
+      r*.48,
+      0,
+      0,
+      Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.fillStyle=
+    "#ffe18b";
+
+  ctx.shadowBlur=15;
+  ctx.shadowColor="#ffd35c";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    x,
+    y,
+    r*.2,
+    0,
+    Math.PI*2
+  );
+
+  ctx.fill();
+
+  ctx.restore();
+}
+
+
+/* ============================================================
+   BURST PARTICLES
+============================================================ */
+
+function createBurst(){
+
+  particles = [];
+
+  const count =
+    Math.floor(
+      clamp(
+        W * H / 5200,
+        150,
+        280
+      )
+    );
+
+  for(let i=0;i<count;i++){
+
+    const angle =
+      Math.random() * Math.PI * 2;
+
+    const speed =
+      3.5 + Math.random() * 11;
+
+    particles.push({
+
+      x: W/2 + (Math.random()-.5)*30,
+      y: H*.48 + (Math.random()-.5)*25,
+
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+
+      tx: null,
+      ty: null,
+
+      size: .8 + Math.random()*2.5,
+
+      life: 1,
+
+      hue: 285 + Math.random()*90,
+
+      morph: false
+    });
+  }
+}
+
+
+/* ============================================================
+   PARTICLE TEXT TARGET
+============================================================ */
+
+let morphTargets = [];
+let morphPrepared = false;
+
+function prepareMorphTargets(){
+
+  if(morphPrepared)return;
+
+  morphPrepared = true;
+
+  const off =
+    document.createElement("canvas");
+
+  const ow =
+    Math.max(
+      420,
+      Math.floor(W*.86)
+    );
+
+  const oh = 150;
+
+  off.width = ow;
+  off.height = oh;
+
+  const ctx =
+    off.getContext("2d");
+
+  const fontSize =
+    Math.min(
+      82,
+      W*.14
+    );
+
+  ctx.fillStyle = "#fff";
+  ctx.font =
+    `700 ${fontSize}px Georgia`;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillText(
+    "Happy Birthday",
+    ow/2,
+    oh/2
+  );
+
+  const pixels =
+    ctx.getImageData(
+      0,
+      0,
+      ow,
+      oh
+    ).data;
+
+  const points = [];
+
+  for(let y=0;y<oh;y+=5){
+
+    for(let x=0;x<ow;x+=5){
+
+      const alpha =
+        pixels[(y*ow+x)*4+3];
+
+      if(alpha > 100){
+
+        points.push({
+
+          x:
+            W/2 -
+            ow/2 +
+            x,
+
+          y:
+            H*.20 -
+            oh/2 +
+            y
+
+        });
+
+      }
+    }
+  }
+
+  /*
+     We have deliberately fewer targets than
+     pixels. This keeps mobile rendering light.
+  */
+
+  const targetCount =
+    Math.min(
+      points.length,
+      particles.length
+    );
+
+  for(let i=0;i<targetCount;i++){
+
+    const p =
+      points[
+        Math.floor(
+          i * points.length / targetCount
+        )
+      ];
+
+    morphTargets.push(p);
+  }
+
+  /*
+     Some particles remain free-floating
+     around the words for a magical dust effect.
+  */
+
+  for(let i=0;i<particles.length;i++){
+
+    if(i < morphTargets.length){
+
+      particles[i].tx =
+        morphTargets[i].x;
+
+      particles[i].ty =
+        morphTargets[i].y;
+
+      particles[i].morph = true;
+
+    }
+  }
+}
+
+
+/* ============================================================
+   PARTICLE BURST / MORPH RENDER
+============================================================ */
+
+function renderBurst(dt){
+
+  fxCtx.clearRect(0,0,W,H);
+
+  const elapsed =
+    performance.now() - stateTime;
+
+  /*
+     First ~1.6 sec:
+     real physical explosion.
+  */
+
+  const morphStart = 1150;
+
+  if(elapsed > morphStart){
+
+    prepareMorphTargets();
+
+  }
+
+  let alive = 0;
+
+  fxCtx.save();
+  fxCtx.globalCompositeOperation = "lighter";
+
+  for(const p of particles){
+
+    if(p.life <= 0)continue;
+
+    alive++;
+
+    if(
+      p.morph &&
+      elapsed > morphStart
+    ){
+
+      /*
+         Smoothly pull the ACTUAL flower
+         burst particles into the words.
+      */
+
+      const strength =
+        clamp(
+          (elapsed-morphStart)/900,
+          0,
+          1
+        );
+
+      p.x =
+        lerp(
+          p.x,
+          p.tx,
+          .018 + strength*.035
+        );
+
+      p.y =
+        lerp(
+          p.y,
+          p.ty,
+          .018 + strength*.035
+        );
+
+      p.vx *= .92;
+      p.vy *= .92;
+
+    }else{
+
+      p.vy += .12 * dt;
+
+      p.vx *= .985;
+      p.vy *= .985;
+
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+    }
+
+    /*
+       Keep the particles alive longer while
+       they form the message.
+    */
+
+    if(elapsed < morphStart){
+
+      p.life -= .0045 * dt;
+
+    }else{
+
+      p.life =
+        Math.min(
+          1,
+          p.life + .001
+        );
+
+    }
+
+    fxCtx.fillStyle =
+      `hsla(
+        ${p.hue},
+        100%,
+        76%,
+        ${Math.max(.35,p.life)}
+      )`;
+
+    fxCtx.beginPath();
+
+    fxCtx.arc(
+      p.x,
+      p.y,
+      p.size,
+      0,
+      Math.PI*2
+    );
+
+    fxCtx.fill();
+  }
+
+  fxCtx.restore();
+
+  /*
+     After the particles have formed the words,
+     transition into the full birthday scene.
+  */
+
+  if(
+    elapsed > 3000
+  ){
+
+    enterWish();
+
+  }
+}
+
+
+/* ============================================================
+   BIRTHDAY WISH
+============================================================ */
+
+function enterWish(){
+
+  if(state === WISH)return;
+
+  state = WISH;
+  stateTime = performance.now();
+
+  stopCamera();
+
+  instruction.style.display = "none";
+  hint.style.display = "none";
+  status.style.display = "none";
+
+  birthdayTitle.classList.add("show");
+
+  setTimeout(()=>{
+    message.classList.add("show");
+  },900);
+
+  startMusic();
+
+  createParty();
+
+  setTimeout(()=>{
+    cakeVisible = true;
+    blowButton.classList.add("show");
+  },1300);
+}
+
+
+/* ============================================================
+   PARTY BACKGROUND
+============================================================ */
+
+function createParty(){
+
+  confetti = [];
+  balloons = [];
+  stars = [];
+
+  /*
+     Fewer, more intentional objects.
+     This is easier on phones.
+  */
+
+  for(let i=0;i<42;i++){
+
+    stars.push({
+
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: .5 + Math.random()*1.5,
+      phase: Math.random()*Math.PI*2
+
+    });
+  }
+
+  for(let i=0;i<48;i++){
+
+    confetti.push({
+
+      x: Math.random()*W,
+      y: Math.random()*H,
+
+      vx:(Math.random()-.5)*.35,
+      vy:.25+Math.random()*.8,
+
+      rotation:Math.random()*Math.PI,
+      rotationSpeed:(Math.random()-.5)*.055,
+
+      size:4+Math.random()*7,
+
+      hue:Math.random()*360
+
+    });
+  }
+
+  const balloonColors =
+    [320,275,45,190,340,260];
+
+  for(let i=0;i<6;i++){
+
+    balloons.push({
+
+      x:
+        55 +
+        Math.random() *
+        Math.max(1,W-110),
+
+      y:
+        H +
+        Math.random()*H*.45,
+
+      radius:
+        22+
+        Math.random()*12,
+
+      speed:
+        .12+
+        Math.random()*.18,
+
+      hue:
+        balloonColors[i],
+
+      phase:
+        Math.random()*10
+
+    });
+  }
+}
+
+
+/* ============================================================
+   CAKE
+============================================================ */
+
+function drawCake(){
+
+  if(!cakeVisible)return;
+
+  const cx = W/2;
+
+  /*
+     Responsive cake.
+     Smaller on phones so it never collides
+     with the title/message.
+  */
+
+  const scale =
+    clamp(
+      W/420,
+      .72,
+      1
+    );
+
+  const cy =
+    H*.69;
+
+  sceneCtx.save();
+
+  sceneCtx.translate(
+    cx,
+    cy
+  );
+
+  sceneCtx.scale(
+    scale,
+    scale
+  );
+
+  /*
+     Gentle floating animation.
+  */
+
+  const float =
+    Math.sin(
+      performance.now()*.0017
+    ) * 2;
+
+  sceneCtx.translate(
+    0,
+    float
+  );
+
+  /*
+     Soft shadow.
+  */
+
+  const shadow =
+    sceneCtx.createRadialGradient(
+      0,80,
+      10,
+      0,80,
+      155
+    );
+
+  shadow.addColorStop(
+    0,
+    "rgba(0,0,0,.38)"
+  );
+
+  shadow.addColorStop(
+    1,
+    "rgba(0,0,0,0)"
+  );
+
+  sceneCtx.fillStyle = shadow;
+
+  sceneCtx.beginPath();
+
+  sceneCtx.ellipse(
+    0,
+    78,
+    160,
+    28,
+    0,
+    0,
+    Math.PI*2
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Plate.
+  */
+
+  sceneCtx.fillStyle =
+    "#fff5fb";
+
+  sceneCtx.beginPath();
+
+  sceneCtx.ellipse(
+    0,
+    66,
+    150,
+    17,
+    0,
+    0,
+    Math.PI*2
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Main cake body.
+  */
+
+  const cakeGradient =
+    sceneCtx.createLinearGradient(
+      -125,0,
+      125,65
+    );
+
+  cakeGradient.addColorStop(
+    0,
+    "#f59ac2"
+  );
+
+  cakeGradient.addColorStop(
+    .5,
+    "#ffd1df"
+  );
+
+  cakeGradient.addColorStop(
+    1,
+    "#e986b3"
+  );
+
+  sceneCtx.fillStyle =
+    cakeGradient;
+
+  sceneCtx.beginPath();
+
+  sceneCtx.roundRect(
+    -125,
+    0,
+    250,
+    66,
+    17
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Frosting.
+  */
+
+  sceneCtx.fillStyle =
+    "#fff6fa";
+
+  sceneCtx.beginPath();
+
+  sceneCtx.roundRect(
+    -125,
+    -12,
+    250,
+    29,
+    15
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Frosting drips.
+  */
+
+  for(let i=0;i<9;i++){
+
+    const x =
+      -108 + i*27;
+
+    sceneCtx.beginPath();
+
+    sceneCtx.arc(
+      x,
+      14,
+      7,
+      0,
+      Math.PI
+    );
+
+    sceneCtx.fill();
+  }
+
+  /*
+     Top layer.
+  */
+
+  sceneCtx.fillStyle =
+    "#ffdce8";
+
+  sceneCtx.beginPath();
+
+  sceneCtx.roundRect(
+    -92,
+    -55,
+    184,
+    44,
+    14
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Top frosting.
+  */
+
+  sceneCtx.fillStyle =
+    "#fffafd";
+
+  sceneCtx.beginPath();
+
+  sceneCtx.roundRect(
+    -92,
+    -62,
+    184,
+    23,
+    12
+  );
+
+  sceneCtx.fill();
+
+  /*
+     Strawberry / berry decorations.
+  */
+
+  const berries = [
+    [-64,28,"#e95889"],
+    [-32,36,"#ff77ad"],
+    [0,30,"#d94c8b"],
+    [34,37,"#ff77ad"],
+    [65,28,"#e95889"]
+  ];
+
+  for(const berry of berries){
+
+    sceneCtx.fillStyle =
+      berry[2];
+
+    sceneCtx.beginPath();
+
+    sceneCtx.arc(
+      berry[0],
+      berry[1],
+      5,
+      0,
+      Math.PI*2
+    );
+
+    sceneCtx.fill();
+
+  }
+
+  /*
+     Candles.
+  */
+
+  const candleX =
+    [-55,-28,0,28,55];
+
+  for(let i=0;i<candleX.length;i++){
+
+    const x =
+      candleX[i];
+
+    sceneCtx.fillStyle =
+      i%2
+      ? "#aa83ff"
+      : "#ff71c5";
+
+    sceneCtx.fillRect(
+      x-5,
+      -103,
+      10,
+      43
+    );
+
+    /*
+       Candle stripe.
+    */
+
+    sceneCtx.fillStyle =
+      "rgba(255,255,255,.45)";
+
+    sceneCtx.fillRect(
+      x-2,
+      -103,
+      3,
+      43
+    );
+
+    /*
+       Flame.
+    */
+
+    if(!candlesBlown){
+
+      const flicker =
+        Math.sin(
+          performance.now()*.015+i
+        )*2;
+
+      sceneCtx.save();
+
+      sceneCtx.shadowBlur = 18;
+      sceneCtx.shadowColor =
+        "#ffd45e";
+
+      sceneCtx.fillStyle =
+        "#ffd45e";
+
+      sceneCtx.beginPath();
+
+      sceneCtx.ellipse(
+        x,
+        -113+flicker,
+        7,
+        12,
+        0,
+        0,
+        Math.PI*2
+      );
+
+      sceneCtx.fill();
+
+      sceneCtx.restore();
+    }
+  }
+
+  /*
+     Cute heart.
+  */
+
+  sceneCtx.fillStyle =
+    "#ff5eb5";
+
+  sceneCtx.font =
+    "28px Georgia";
+
+  sceneCtx.textAlign =
+    "center";
+
+  sceneCtx.fillText(
+    "♡",
+    0,
+    -25
+  );
+
+  sceneCtx.restore();
+}
+
+
+/* ============================================================
+   PARTY RENDER
+============================================================ */
+
+function renderParty(now){
+
+  sceneCtx.clearRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  /*
+     One background gradient per frame.
+     Everything else is deliberately simple.
+  */
+
+  const bg =
+    sceneCtx.createLinearGradient(
+      0,
+      0,
+      0,
+      H
+    );
+
+  bg.addColorStop(
+    0,
+    "#2a102f"
+  );
+
+  bg.addColorStop(
+    .45,
+    "#180a20"
+  );
+
+  bg.addColorStop(
+    1,
+    "#08040c"
+  );
+
+  sceneCtx.fillStyle =
+    bg;
+
+  sceneCtx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  /*
+     Soft central glow.
+  */
+
+  const centerGlow =
+    sceneCtx.createRadialGradient(
+      W*.5,
+      H*.35,
+      0,
+      W*.5,
+      H*.35,
+      Math.min(W,H)*.65
+    );
+
+  centerGlow.addColorStop(
+    0,
+    "rgba(255,105,205,.12)"
+  );
+
+  centerGlow.addColorStop(
+    1,
+    "rgba(255,105,205,0)"
+  );
+
+  sceneCtx.fillStyle =
+    centerGlow;
+
+  sceneCtx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  /*
+     Stars.
+  */
+
+  for(const s of stars){
+
+    const alpha =
+      .25 +
+      .25 *
+      Math.sin(
+        now*.002+s.phase
+      );
+
+    sceneCtx.fillStyle =
+      `rgba(255,225,245,${alpha})`;
+
+    sceneCtx.beginPath();
+
+    sceneCtx.arc(
+      s.x,
+      s.y,
+      s.r,
+      0,
+      Math.PI*2
+    );
+
+    sceneCtx.fill();
+  }
+
+  /*
+     Balloons.
+  */
+
+  for(const b of balloons){
+
+    b.y -= b.speed;
+
+    if(b.y < -100){
+      b.y = H+80;
+    }
+
+    const sway =
+      Math.sin(
+        now*.001+b.phase
+      )*10;
+
+    sceneCtx.fillStyle =
+      `hsla(
+        ${b.hue},
+        75%,
+        70%,
+        .20
+      )`;
+
+    sceneCtx.beginPath();
+
+    sceneCtx.ellipse(
+      b.x+sway,
+      b.y,
+      b.radius*.78,
+      b.radius,
+      -.1,
+      0,
+      Math.PI*2
+    );
+
+    sceneCtx.fill();
+
+    sceneCtx.strokeStyle =
+      "rgba(255,230,245,.18)";
+
+    sceneCtx.beginPath();
+
+    sceneCtx.moveTo(
+      b.x+sway,
+      b.y+b.radius
+    );
+
+    sceneCtx.lineTo(
+      b.x+sway,
+      b.y+b.radius+65
+    );
+
+    sceneCtx.stroke();
+  }
+
+  /*
+     Confetti.
+  */
+
+  for(const c of confetti){
+
+    if(c.smoke){
+
+      c.y += c.vy;
+      c.x += c.vx;
+      c.size *= .995;
+
+      sceneCtx.fillStyle =
+        `rgba(230,220,230,.${Math.max(.05,c.size/8)})`;
+
+      sceneCtx.beginPath();
+
+      sceneCtx.arc(
+        c.x,
+        c.y,
+        c.size,
+        0,
+        Math.PI*2
+      );
+
+      sceneCtx.fill();
+
+      continue;
+    }
+
+    c.y += c.vy;
+    c.x += c.vx;
+    c.rotation += c.rotationSpeed;
+
+    if(c.y > H+20){
+      c.y = -20;
+      c.x = Math.random()*W;
+    }
+
+    sceneCtx.save();
+
+    sceneCtx.translate(
+      c.x,
+      c.y
+    );
+
+    sceneCtx.rotate(
+      c.rotation
+    );
+
+    sceneCtx.fillStyle =
+      `hsla(
+        ${c.hue},
+        80%,
+        70%,
+        .72
+      )`;
+
+    sceneCtx.fillRect(
+      -c.size/2,
+      -c.size/2,
+      c.size,
+      c.size*.45
+    );
+
+    sceneCtx.restore();
+  }
+
+  drawCake();
+}
+
+
+/* ============================================================
+   CANDLE BLOW
+============================================================ */
+
+function blowCandles(){
+
+  if(candlesBlown)return;
+
+  candlesBlown=true;
+
+  blowButton.classList.remove("show");
+
+  /*
+     Candle smoke.
+  */
+
+  for(let i=0;i<20;i++){
+
+    confetti.push({
+
+      x:
+        W/2+
+        (Math.random()-.5)*100,
+
+      y:
+        H*.57,
+
+      vx:
+        (Math.random()-.5)*.5,
+
+      vy:
+        -.45-
+        Math.random()*.7,
+
+      rotation:0,
+      rotationSpeed:.01,
+
+      size:
+        3+
+        Math.random()*3,
+
+      hue:0,
+      smoke:true
+    });
+  }
+
+  /*
+     Celebration burst.
+  */
+
+  for(let i=0;i<55;i++){
+
+    confetti.push({
+
+      x:W/2,
+      y:H*.57,
+
+      vx:
+        (Math.random()-.5)*5,
+
+      vy:
+        -2-
+        Math.random()*4,
+
+      rotation:
+        Math.random()*Math.PI,
+
+      rotationSpeed:
+        (Math.random()-.5)*.13,
+
+      size:
+        4+
+        Math.random()*7,
+
+      hue:
+        Math.random()*360
+    });
+  }
+
+  setTimeout(()=>{
+
+    message.innerHTML =
+      "Make a wish, close your eyes…<br>" +
+      "and keep being the beautiful person you are. ♡✨";
+
+  },500);
+}
+
+
+/* ============================================================
+   CANDLE BLOW
+============================================================ */
+
+function blowCandles(){
+
+  if(candlesBlown)return;
+
+  candlesBlown=true;
+
+  blowButton.classList.remove("show");
+
+  /*
+     Candle smoke.
+  */
+
+  for(let i=0;i<25;i++){
+
+    confetti.push({
+
+      x:
+        W/2+
+        (Math.random()-.5)*100,
+
+      y:
+        H*.57,
+
+      vx:
+        (Math.random()-.5)*.7,
+
+      vy:
+        -.5-Math.random()*.8,
+
+      rotation:0,
+
+      rotationSpeed:.01,
+
+      size:
+        3+
+        Math.random()*4,
+
+      hue:0,
+
+      smoke:true
+
+    });
+
+  }
+
+  /*
+     Extra celebratory confetti.
+  */
+
+  for(let i=0;i<80;i++){
+
+    confetti.push({
+
+      x:W/2,
+      y:H*.55,
+
+      vx:
+        (Math.random()-.5)*6,
+
+      vy:
+        -2-
+        Math.random()*5,
+
+      rotation:
+        Math.random()*Math.PI,
+
+      rotationSpeed:
+        (Math.random()-.5)*.15,
+
+      size:
+        4+
+        Math.random()*8,
+
+      hue:
+        Math.random()*360
+
+    });
+
+  }
+
+
+  /*
+     Sweet final line.
+  */
+
+  setTimeout(()=>{
+
+    message.innerHTML=
+      "Make a wish, close your eyes…<br>" +
+      "and keep being the beautiful person you are. ♡✨";
+
+  },500);
+
+}
+
+
+/* ============================================================
+   MAIN LOOP
+============================================================ */
+
+let lastTime=
+  performance.now();
+
+
+function render(now){
+
+  const dt =
+    clamp(
+      (now-lastTime)/16.67,
+      .3,
+      2
+    );
+
+  lastTime = now;
+
+  if(
+    state === DRAW ||
+    state === BOUQUET
+  ){
+
+    renderCamera();
+
+    if(state === DRAW){
+
+      renderTrail();
+
+      if(lastTip){
+
+        drawFlower(
+          fxCtx,
+          lastTip.x,
+          lastTip.y,
+          Math.min(W,H)*.045,
+          now*.001,
+          .7
+        );
+      }
+    }
+
+    if(state === BOUQUET){
+
+      fxCtx.clearRect(
+        0,
+        0,
+        W,
+        H
+      );
+
+      const cx = W/2;
+      const cy = H*.47;
+
+      const positions = [
+        [-.28,-.10],
+        [-.14,-.25],
+        [0,-.32],
+        [.15,-.25],
+        [.29,-.08],
+        [-.20,.10],
+        [0,.05],
+        [.20,.10],
+        [0,.25]
+      ];
+
+      for(
+        let i=0;
+        i<positions.length;
+        i++
+      ){
+
+        const q =
+          positions[i];
+
+        drawFlower(
+          fxCtx,
+          cx +
+            q[0] *
+            Math.min(W,H)*.28,
+
+          cy +
+            q[1] *
+            Math.min(W,H)*.28,
+
+          Math.min(W,H)*.055,
+          i*.4+now*.0003,
+          .9
+        );
+      }
+    }
+  }
+
+  if(state === BURST){
+
+    renderBurst(dt);
+
+  }
+
+  if(state === WISH){
+
+    renderParty(now);
+
+  }
+
+  requestAnimationFrame(render);
+}
+
+
+/* ============================================================
+   STATE LOGIC
+============================================================ */
+
+function update(){
+
+  const now=
+    performance.now();
+
+  const elapsed=
+    now-stateTime;
+
+
+  /*
+     DRAW
+
+     Normal:
+       user draws.
+
+     Failsafe:
+       after 8 seconds,
+       move on.
+  */
+
+  if(state===DRAW){
+
+    if(
+      trail.length>35 &&
+      elapsed>2800
+    ){
+
+      state=BOUQUET;
+      stateTime=now;
+
+      instruction.textContent=
+        "Bring your other hand close";
+
+      hint.textContent=
+        "Let the flowers gather together.";
+
+    }
+
+    else if(
+      elapsed>8000
+    ){
+
+      state=BOUQUET;
+      stateTime=now;
+
+      instruction.textContent=
+        "Bring your other hand close";
+
+      hint.textContent=
+        "Let the flowers gather together.";
+
+    }
+
+  }
+
+
+  /*
+     BOUQUET
+
+     Normal:
+       both hands close.
+
+     Failsafe:
+       after 6 seconds.
+  */
+
+  else if(state===BOUQUET){
+
+    if(
+      gathered &&
+      elapsed>450
+    ){
+
+      state=BURST;
+      stateTime=now;
+
+      createBurst();
+
+      instruction.textContent="";
+      hint.textContent="";
+      status.textContent="";
+
+    }
+
+    else if(
+      elapsed>6000
+    ){
+
+      state=BURST;
+      stateTime=now;
+
+      createBurst();
+
+      instruction.textContent="";
+      hint.textContent="";
+      status.textContent="";
+
+    }
+
+  }
+
+
+  /*
+     BURST is transitioned by renderBurst.
+  */
+
+}
+
+
+/* ============================================================
+   START
+============================================================ */
+
+startButton.addEventListener(
+  "click",
+  async()=>{
+
+    if(appStarted)return;
+
+    appStarted=true;
+
+    startButton.disabled=true;
+
+    startButton.textContent=
+      "Preparing the magic…";
+
+    /*
+       Audio context is created from
+       this real user gesture.
+    */
+
+    startMusic();
+
+    try{
+      await initHands();
+      await startCamera();
+    }catch(e){
+      console.warn(e);
+    }
+
+    start.style.display="none";
+
+    state=DRAW;
+    stateTime=performance.now();
+
+    instruction.textContent=
+      "Raise your hand to draw";
+
+    hint.textContent=
+      "Move your index finger through the air.";
+
+  }
+);
+
+
+/* ============================================================
+   BLOW BUTTON
+============================================================ */
+
+blowButton.addEventListener(
+  "click",
+  blowCandles
+);
+
+
+/* ============================================================
+   STATE TIMER
+============================================================ */
+
+setInterval(
+  update,
+  80
+);
+
+
+/* ============================================================
+   START RENDER LOOP
+============================================================ */
+
+requestAnimationFrame(
+  render
+);
+
+})();
+</script>
+
+</body>
+</html>
